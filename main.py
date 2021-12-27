@@ -1,10 +1,10 @@
 from datetime import datetime
 from typing import Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, status, HTTPException
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr
-from sqlmodel import Field, Session, SQLModel, create_engine
+from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 
 class UserCreate(BaseModel): 
@@ -86,3 +86,13 @@ async def create_address(address: AddressCreate):
         session.add(address_in_db)
         session.commit()
     return
+
+@app.delete("/address/{address_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_address(address_id: int):
+    with Session(engine) as session:
+        try:
+            address = session.exec(select(AddressInDB).where(AddressInDB.id == address_id)).one()
+        except:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Address not found")
+        session.delete(address)
+        session.commit()
