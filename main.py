@@ -14,7 +14,6 @@ class UserCreate(BaseModel):
     password: str
     is_home_owner: bool
 
-
 class UserInDB(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     phone: str
@@ -22,6 +21,28 @@ class UserInDB(SQLModel, table=True):
     email: str
     hashed_password: str
     is_home_owner: bool
+    created_at: datetime
+    is_active: Optional[bool] = Field(default=True)
+
+class AddressCreate(BaseModel): 
+    street_name: str
+    street_number: int
+    city: str
+    postal_code: int
+    country: str
+    user_id: str
+    size: int
+    number_of_rooms: int
+
+class AddressInDB(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    country: str
+    street_name: str
+    street_number: int
+    city: str
+    postal_code: str
+    size: int
+    number_of_rooms: int
     created_at: datetime
     is_active: Optional[bool] = Field(default=True)
 
@@ -53,3 +74,15 @@ async def create_user(user: UserCreate):
 
 def get_password_hash(password):
     return pwd_context.hash(password)
+
+
+@app.post("/address/", status_code=201)
+async def create_address(address: AddressCreate):
+    address_in_db = AddressInDB(
+        **address.dict(),
+        created_at=datetime.now(),
+    )
+    with Session(engine) as session:
+        session.add(address_in_db)
+        session.commit()
+    return
