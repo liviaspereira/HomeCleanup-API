@@ -90,7 +90,7 @@ async def create_address(
     address: AddressCreate = None, session: Session = Depends(get_session)
 ):
     if not address:
-        raise HTTPException(status_code=400, detail="Body is requered")
+        raise HTTPException(status_code=400, detail="Body is required")
     address_in_db = AddressInDB(
         **address.dict(),
         created_at=datetime.now(),

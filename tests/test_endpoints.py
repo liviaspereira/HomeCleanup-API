@@ -28,3 +28,20 @@ def test_create_address(create_address, session: Session, client: TestClient):
     expected_data["is_active"] = True
     expected_data["created_at"] = datetime.now()
     assert address.dict() == expected_data
+
+
+def test_delete_address_not_found(client):
+    response = client.delete("/address/1")
+    assert response.status_code == 404
+
+
+def test_delete_address(create_address, session: Session, client: TestClient):
+    address_in_db = AddressInDB(**create_address, created_at=datetime.now())
+    session.add(address_in_db)
+    session.commit()
+
+    response = client.delete("/address/1")
+    assert response.status_code == 204
+
+    address_from_db = session.get(AddressInDB, 1)
+    assert address_from_db is None
