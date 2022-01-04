@@ -1,18 +1,19 @@
 from datetime import datetime
 from typing import Optional
 
-from fastapi import FastAPI, status, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, status
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 
-class UserCreate(BaseModel): 
+class UserCreate(BaseModel):
     name: str
     email: EmailStr
     phone: str
     password: str
     is_home_owner: bool
+
 
 class UserInDB(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -24,15 +25,17 @@ class UserInDB(SQLModel, table=True):
     created_at: datetime
     is_active: Optional[bool] = Field(default=True)
 
-class AddressCreate(BaseModel): 
+
+class AddressCreate(BaseModel):
     street_name: str
     street_number: int
     city: str
-    postal_code: int
+    postal_code: str
     country: str
-    user_id: str
+    user_id: int
     size: int
     number_of_rooms: int
+
 
 class AddressInDB(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -45,11 +48,18 @@ class AddressInDB(SQLModel, table=True):
     number_of_rooms: int
     created_at: datetime
     is_active: Optional[bool] = Field(default=True)
+    user_id: int
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 app = FastAPI()
+
+
+def get_session():
+    with Session(engine) as session:
+        yield session
+
 
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
@@ -59,16 +69,15 @@ SQLModel.metadata.create_all(engine)
 
 
 @app.post("/users/", status_code=201)
-async def create_user(user: UserCreate):
+async def create_user(user: UserCreate, session: Session = Depends(get_session)):
     hashed_password = get_password_hash(user.password)
     user_in_db = UserInDB(
         **user.dict(exclude={"password"}),
         hashed_password=hashed_password,
         created_at=datetime.now(),
     )
-    with Session(engine) as session:
-        session.add(user_in_db)
-        session.commit()
+    session.add(user_in_db)
+    session.commit()
     return
 
 
@@ -77,22 +86,29 @@ def get_password_hash(password):
 
 
 @app.post("/address/", status_code=201)
-async def create_address(address: AddressCreate):
+async def create_address(
+    address: AddressCreate = None, session: Session = Depends(get_session)
+):
+    if not address:
+        raise HTTPException(status_code=400, detail="Body is requered")
     address_in_db = AddressInDB(
         **address.dict(),
         created_at=datetime.now(),
     )
-    with Session(engine) as session:
-        session.add(address_in_db)
-        session.commit()
+    session.add(address_in_db)
+    session.commit()
     return
 
+
 @app.delete("/address/{address_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_address(address_id: int):
-    with Session(engine) as session:
-        try:
-            address = session.exec(select(AddressInDB).where(AddressInDB.id == address_id)).one()
-        except:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Address not found")
-        session.delete(address)
-        session.commit()
+def delete_address(address_id: int, session: Session = Depends(get_session)):
+    try:
+        address = session.exec(
+            select(AddressInDB).where(AddressInDB.id == address_id)
+        ).one()
+    except:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Address not found"
+        )
+    session.delete(address)
+    session.commit()
