@@ -45,3 +45,22 @@ def test_delete_address(create_address, session: Session, client: TestClient):
 
     address_from_db = session.get(AddressInDB, 1)
     assert address_from_db is None
+
+def test_delete_id_no_exist(create_address, session: Session, client: TestClient):
+    address_in_db = AddressInDB(**create_address, created_at=datetime.now())
+    session.add(address_in_db)
+    session.commit()
+    response = client.delete("/address/5")
+    assert response.status_code == 404
+
+    address_from_db = session.get(AddressInDB, 1)
+    assert address_from_db is not None
+
+def test_create_user_no_body(client):
+    response = client.post("/users/")
+    assert response.status_code == 400
+
+
+
+
+

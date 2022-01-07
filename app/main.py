@@ -69,7 +69,12 @@ SQLModel.metadata.create_all(engine)
 
 
 @app.post("/users/", status_code=201)
-async def create_user(user: UserCreate, session: Session = Depends(get_session)):
+async def create_user(user: UserCreate = None, session: Session = Depends(get_session)):    
+
+    if not user:
+        raise HTTPException(status_code=400, detail="Body is required")
+
+
     hashed_password = get_password_hash(user.password)
     user_in_db = UserInDB(
         **user.dict(exclude={"password"}),
