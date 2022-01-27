@@ -30,7 +30,7 @@ def client_fixture(session: Session):
 
 
 @pytest.fixture(name="create_address")
-def create_body_fixture():
+def create_address_fixture():
     return {
         "street_name": "Conde",
         "street_number": 123456,
@@ -40,4 +40,14 @@ def create_body_fixture():
         "user_id": 1,
         "size": 69,
         "number_of_rooms": 3,
+    }
+
+@pytest.fixture(name="create_user")
+def create_user_fixture():
+    return {
+    "name": "Lucas",
+    "email": "lucaschato@chato.com",
+    "phone": "658555226",
+    "password": "askjhahjsa055",
+    "is_home_owner": True,
     }

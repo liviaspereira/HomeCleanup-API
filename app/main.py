@@ -19,7 +19,7 @@ class UserInDB(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     phone: str
     name: str
-    email: str
+    email: str 
     hashed_password: str
     is_home_owner: bool
     created_at: datetime
@@ -73,8 +73,6 @@ async def create_user(user: UserCreate = None, session: Session = Depends(get_se
 
     if not user:
         raise HTTPException(status_code=400, detail="Body is required")
-
-
     hashed_password = get_password_hash(user.password)
     user_in_db = UserInDB(
         **user.dict(exclude={"password"}),

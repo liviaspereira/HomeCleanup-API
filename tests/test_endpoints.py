@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from app.main import AddressInDB
+from app.main import AddressInDB, UserInDB
 
 
 def test_create_address_no_body(client):
@@ -59,6 +59,27 @@ def test_delete_id_no_exist(create_address, session: Session, client: TestClient
 def test_create_user_no_body(client):
     response = client.post("/users/")
     assert response.status_code == 400
+
+def test_create_user_bad_body(client):
+    response = client.post("/users/", json={"Erro": "erro"})
+    assert response.status_code == 422
+
+@pytest.mark.freeze_time("2017-05-21")
+def test_create_user(client, session, create_user):
+    response = client.post("/users/", json=create_user)
+    assert response.status_code == 201
+
+    user = session.get(UserInDB, 1)
+    expected_data = create_user
+    expected_data["id"] = 1
+    expected_data["is_active"] = True
+    expected_data["created_at"] = datetime.now()
+    del expected_data["password"]
+    del user.hashed_password
+    assert user.dict() == expected_data
+
+
+
 
 
 
